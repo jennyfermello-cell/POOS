@@ -1,0 +1,414 @@
+import sys, re, sqlite3, requests
+from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import (QApplication, QMainWindow, QPushButton, QLabel, QLineEdit, QComboBox, QMessageBox)
+
+class Janela_cadastro(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.topo = 100
+        self.esquerda = 100
+        self.largura = 600
+        self.altura = 700
+        self.titulo = "Usuários"
+        self.setStyleSheet("QMainWindow {background-color: #f8f9fa;}")
+
+        self.criar_tabela_banco()
+
+        label1 = QLabel(self)
+        label1.setText("Novo Usuário")
+        label1.move(0, 40)
+        label1.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        label1.setStyleSheet('QLabel {font:bold;font-size:24px}')
+        label1.resize(600, 30)
+
+        # 1. Nome Completo
+        label2 = QLabel(self)
+        label2.setText("Nome Completo:")
+        label2.move(15, 110)
+        label2.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        label2.setStyleSheet('QLabel {font-size:15px}')
+        label2.resize(145, 35)
+
+        self.nome_completo = QLineEdit(self)
+        self.nome_completo.move(165, 110)
+        self.nome_completo.resize(380, 35)
+        self.nome_completo.setPlaceholderText("Ex: João Ferreira de Almeida")
+
+        # 2. Documento
+        self.cpf_cnpj_select = QComboBox(self)
+        self.cpf_cnpj_select.move(15, 155)
+        self.cpf_cnpj_select.resize(145, 35)
+        self.cpf_cnpj_select.addItems(["Selecione...", "CPF", "CNPJ"])
+
+        self.cpf_cnpj = QLineEdit(self)
+        self.cpf_cnpj.move(165, 155)
+        self.cpf_cnpj.resize(380, 35)
+        self.cpf_cnpj.setPlaceholderText("Ex: 12345678900 ou 12345678000100")
+
+        # 3. E-mail
+        label4 = QLabel(self)
+        label4.setText("E-mail:")
+        label4.move(15, 200)
+        label4.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        label4.setStyleSheet('QLabel {font-size:15px}')
+        label4.resize(145, 35)
+
+        self.email = QLineEdit(self)
+        self.email.move(165, 200)
+        self.email.resize(380, 35)
+        self.email.setPlaceholderText("Ex: joao@example.com")
+
+        # 4. Celular
+        label5 = QLabel(self)
+        label5.setText("Celular:")
+        label5.move(15, 245)
+        label5.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        label5.setStyleSheet('QLabel {font-size:15px}')
+        label5.resize(145, 35)
+
+        self.celular = QLineEdit(self)
+        self.celular.move(165, 245)
+        self.celular.resize(380, 35)
+        self.celular.setPlaceholderText("Ex: 11912345678")
+
+        # 5. CEP + Botão ConsultarS
+        label6 = QLabel(self)
+        label6.setText("CEP:")
+        label6.move(15, 290)
+        label6.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        label6.setStyleSheet('QLabel {font-size:15px}')
+        label6.resize(145, 35)
+
+        self.cep = QLineEdit(self)
+        self.cep.move(165, 290)
+        self.cep.resize(240, 35)
+        self.cep.setPlaceholderText("Ex: 12345-678")
+
+        botao3 = QPushButton('Buscar CEP', self)
+        botao3.move(415, 290)
+        botao3.resize(130, 35)  
+        botao3.setStyleSheet('QPushButton {background-color: #3498db; font-size:14px; color:#ffffff; font-weight:bold; border-radius: 8px;}')
+        botao3.clicked.connect(self.verificar_preenchimento)
+
+        # 6. Logradouro
+        label7 = QLabel(self)
+        label7.setText("Logradouro:")
+        label7.move(15, 335)
+        label7.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        label7.setStyleSheet('QLabel {font-size:15px}')
+        label7.resize(145, 35)
+
+        self.logradouro = QLineEdit(self)
+        self.logradouro.move(165, 335)
+        self.logradouro.resize(380, 35)
+        self.logradouro.setPlaceholderText("Ex: Rua das Flores")
+
+        # 7. Número da Residência
+        label8 = QLabel(self)
+        label8.setText("Número da residência:")
+        label8.move(15, 380)
+        label8.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        label8.setStyleSheet('QLabel {font-size:13px}')
+        label8.resize(145, 35)
+
+        self.numero = QLineEdit(self)
+        self.numero.move(165, 380)
+        self.numero.resize(380, 35)
+        self.numero.setPlaceholderText("Ex: 123")
+
+        # 8. Complemento
+        label9 = QLabel(self)
+        label9.setText("Complemento:")
+        label9.move(15, 425)
+        label9.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        label9.setStyleSheet('QLabel {font-size:15px}')
+        label9.resize(145, 35)
+
+        self.complemento = QLineEdit(self)
+        self.complemento.move(165, 425)
+        self.complemento.resize(380, 35)
+        self.complemento.setPlaceholderText("Ex: Apt 123")
+
+        # 9. Bairro
+        label10 = QLabel(self)
+        label10.setText("Bairro:")
+        label10.move(15, 470)
+        label10.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        label10.setStyleSheet('QLabel {font-size:15px}')
+        label10.resize(145, 35)
+
+        self.bairro = QLineEdit(self)
+        self.bairro.move(165, 470)
+        self.bairro.resize(380, 35)
+        self.bairro.setPlaceholderText("Ex: Jardim América")
+
+        # 10. Cidade
+        label11 = QLabel(self)
+        label11.setText("Cidade:")
+        label11.move(15, 515)
+        label11.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        label11.setStyleSheet('QLabel {font-size:15px}')
+        label11.resize(145, 35)
+
+        self.cidade = QLineEdit(self)
+        self.cidade.move(165, 515)
+        self.cidade.resize(380, 35)
+        self.cidade.setPlaceholderText("Ex: São Paulo")
+
+        label12 = QLabel(self)
+        label12.setText("Estado:")
+        label12.move(15, 560)
+        label12.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        label12.setStyleSheet('QLabel {font-size:15px}')
+        label12.resize(145, 35)
+
+        self.estado = QComboBox(self)
+        self.estado.move(165, 560)
+        self.estado.resize(380, 35)
+        self.estado.addItems(["Selecione...", "AC", "AL", "AM", "AP", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO"])
+
+        self.botao1 = QPushButton('Limpar', self)
+        self.botao1.move(40, 610)
+        self.botao1.resize(250, 45)  
+        self.botao1.setStyleSheet('QPushButton {background-color:#ffffff; font-size:16px; border: 1px solid #dcdde1; border-radius: 10px;}')
+
+        self.botao2 = QPushButton('Salvar Usuário', self)
+        self.botao2.move(310, 610)
+        self.botao2.resize(250, 45)  
+        self.botao2.setStyleSheet('QPushButton {background-color:#2ecc71; font-size:16px; color:#ffffff; font-weight:bold; border-radius: 10px;}')
+
+        self.botao1.clicked.connect(self.limpar)
+        self.botao2.clicked.connect(self.salvar_usuarios)
+
+        self.CarregarJanela()
+
+    def verificar_preenchimento(self):
+        cep = self.cep.text().strip().replace("-", "").replace(".", "")
+        if not re.match(r"^\d{8}$", cep):
+            QMessageBox.warning(self, "Erro de Validação", "O CEP deve conter 8 dígitos numéricos!")
+            self.cep.setFocus()
+            return
+        try:
+            url = f"https://viacep.com.br/ws/{cep}/json/"
+            resposta = requests.get(url, timeout=5)
+            dados = resposta.json()
+
+            if "erro" in dados:
+                QMessageBox.warning(self, "Erro", "CEP não encontrado!")
+                return
+
+            self.logradouro.setText(dados.get("logradouro", ""))
+            self.bairro.setText(dados.get("bairro", ""))
+            self.cidade.setText(dados.get("localidade", ""))
+
+            uf_api = dados.get("uf", "")
+            index_uf = self.estado.findText(uf_api)
+            if index_uf != -1:
+                self.estado.setCurrentIndex(index_uf)
+
+            QMessageBox.information(self, "Sucesso", "Endereço carregado com sucesso!")
+
+        except requests.exceptions.RequestException:
+            QMessageBox.critical(self, "Erro de Conexão", "Não foi possível conectar ao serviço de busca de CEP.")
+
+    def criar_tabela_banco(self):
+        conexao = sqlite3.connect("sistema_cadastro.db")
+        cursor = conexao.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS usuarios (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nome TEXT NOT NULL,
+                tipo_documento TEXT NOT NULL,
+                documento TEXT NOT NULL,
+                email TEXT NOT NULL,
+                celular TEXT NOT NULL,
+                cep TEXT NOT NULL,
+                logradouro TEXT NOT NULL,
+                numero TEXT NOT NULL,
+                complemento TEXT,
+                bairro TEXT NOT NULL,
+                cidade TEXT NOT NULL,
+                estado TEXT NOT NULL
+            )
+        """)
+        conexao.commit()
+        conexao.close()
+
+    def validar_cpf(self, cpf: str) -> bool:
+        cpf = re.sub(r'\D', '', cpf)
+        if len(cpf) != 11 or cpf == cpf[0] * 11:
+            return False
+        
+        soma = sum(int(cpf[i]) * (10 - i) for i in range(9))
+        resto = (soma * 10) % 11
+        digito_1 = 0 if resto == 10 else resto
+        if digito_1 != int(cpf[9]):
+            return False
+            
+        soma = sum(int(cpf[i]) * (11 - i) for i in range(10))
+        resto = (soma * 10) % 11
+        digito_2 = 0 if resto == 10 else resto
+        return digito_2 == int(cpf[10])
+
+    def validar_cnpj(self, cnpj: str) -> bool:
+        cnpj = re.sub(r'\D', '', cnpj)
+        if len(cnpj) != 14 or cnpj == cnpj[0] * 14:
+            return False
+            
+        def calc_digito(fatia, pesos):
+            soma = sum(int(a) * b for a, b in zip(fatia, pesos))
+            resto = soma % 11
+            return 0 if resto < 2 else 11 - resto
+
+        pesos_1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
+        pesos_2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
+
+        if calc_digito(cnpj[:12], pesos_1) != int(cnpj[12]):
+            return False
+        return calc_digito(cnpj[:13], pesos_2) == int(cnpj[13])
+
+    def salvar_usuarios(self):
+        nome_completo_salvo = self.nome_completo.text().strip()
+        cpf_cnpj_salvo = self.cpf_cnpj.text().strip()
+        email_salvo = self.email.text().strip()
+        celular_salvo = self.celular.text().strip()
+        cep_salvo = self.cep.text().strip()
+        logradouro_salvo = self.logradouro.text().strip()
+        numero_salvo = self.numero.text().strip()
+        complemento_salvo = self.complemento.text().strip()
+        bairro_salvo = self.bairro.text().strip()
+        cidade_salvo = self.cidade.text().strip()
+        estado_salvo = self.estado.currentText()
+        tipo_doc = self.cpf_cnpj_select.currentText()
+
+        campos = [
+            (self.nome_completo, "Nome"),
+            (self.cpf_cnpj, "CPF/CNPJ"),
+            (self.email, "E-mail"),
+            (self.celular, "Celular"),
+            (self.cep, "CEP"),
+            (self.logradouro, "Logradouro"),
+            (self.numero, "Número"),
+            (self.bairro, "Bairro"),
+            (self.cidade, "Cidade")
+        ]
+        
+        for componente, campo in campos:
+            if not componente.text().strip():
+                QMessageBox.warning(self, "Erro de Preenchimento", f"O campo '{campo}' não pode ficar em branco!")
+                componente.setFocus() 
+                return 
+
+        if self.cpf_cnpj_select.currentText() == "Selecione...":
+            QMessageBox.warning(self, "Erro de Seleção", "Por favor, selecione CPF ou CNPJ.")
+            self.cpf_cnpj_select.setFocus()
+            return
+
+        if tipo_doc == "CPF":
+            if not self.validar_cpf(cpf_cnpj_salvo):
+                QMessageBox.warning(self, "Erro de Validação", "O CPF não pode conter números ou caracteres especiais é inválido!")
+                self.cpf_cnpj.setFocus()
+                return
+        elif tipo_doc == "CNPJ":
+            if not self.validar_cnpj(cpf_cnpj_salvo):
+                QMessageBox.warning(self, "Erro de Validação", "O CNPJ não pode conter números ou caracteres especiais informado é inválido!")
+                self.cpf_cnpj.setFocus()
+                return
+
+        padrao_email = r"^[\w\.-]+@[\w\.-]+\.[a-z]{2,4}(\.[a-z]{2})?$"
+        if not re.match(padrao_email, email_salvo):
+            QMessageBox.warning(self, "Erro de Validação", "Insira um e-mail válido!")
+            self.email.setFocus()
+            return
+
+        if not re.match(r"^[A-Za-zÀ-ÿ\s]+$", nome_completo_salvo):
+            QMessageBox.warning(self, "Erro de Validação", "O nome deve conter apenas letras!")
+            self.nome_completo.setFocus()
+            return
+
+        if not re.match(r"^[0-9]+$", numero_salvo):
+            QMessageBox.warning(self, "Erro de Validação", "O número deve conter apenas números!")
+            self.numero.setFocus()
+            return
+
+        padrao_endereco = r"^[A-Za-zÀ-ÿ0-9\s\.\,\-\º\ª]+$"
+        if not re.match(padrao_endereco, logradouro_salvo):
+            QMessageBox.warning(self, "Erro de Validação", "O logradouro não pode conter números ou caracteres especiais!")
+            self.logradouro.setFocus()
+            return
+
+        if not re.match(padrao_endereco, bairro_salvo):
+            QMessageBox.warning(self, "Erro de Validação", "O bairro não pode conter números ou caracteres especiais!")
+            self.bairro.setFocus()
+            return
+
+        if not re.match(padrao_endereco, cidade_salvo):
+            QMessageBox.warning(self, "Erro de Validação", "A cidade contém caracteres inválidos!")
+            self.cidade.setFocus()
+            return
+
+        if complemento_salvo and not re.match(padrao_endereco, complemento_salvo):
+            QMessageBox.warning(self, "Erro de Validação", "O complemento não pode conter números ou caracteres especiais!")
+            self.complemento.setFocus()
+            return
+
+        if not re.match(r"^[0-9]{8}$", cep_salvo):
+            QMessageBox.warning(self, "Erro de CEP", "O CEP deve conter exatamente 8 dígitos numéricos!")
+            self.cep.setFocus()
+            return
+
+        if not re.match(r"^[0-9]{11}$", celular_salvo):
+            QMessageBox.warning(self, "Erro de Celular", "O celular deve conter exatamente 11 dígitos numéricos (com DDD)!")
+            self.celular.setFocus()
+            return
+        
+        if self.estado.currentText() == "Selecione...":
+            QMessageBox.warning(self, "Erro de Seleção", "Por favor, selecione o estado.")
+            self.estado.setFocus()
+            return
+        QMessageBox.information(self, "Sucesso!", "Todos os campos foram preenchidos corretamente!")
+
+        try:
+            conexao = sqlite3.connect("sistema_cadastro.db")
+            cursor = conexao.cursor()
+            cursor.execute("""
+                INSERT INTO usuarios (nome, tipo_documento, documento, email, celular, cep, logradouro, numero, complemento, bairro, cidade, estado)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                nome_completo_salvo, tipo_doc, cpf_cnpj_salvo, email_salvo, 
+                celular_salvo, cep_salvo, logradouro_salvo, numero_salvo, 
+                complemento_salvo, bairro_salvo, cidade_salvo, estado_salvo
+            ))
+            
+            conexao.commit()
+            conexao.close()
+
+            QMessageBox.information(self, "Sucesso!", "Usuário cadastrado com sucesso no novo banco de dados!")
+            self.limpar()
+
+        except sqlite3.Error as e:
+            QMessageBox.critical(self, "Erro no Banco de Dados", f"Falha ao salvar no banco: {e}")
+
+    def limpar(self):
+        self.nome_completo.clear()
+        self.cpf_cnpj.clear()
+        self.cpf_cnpj_select.setCurrentIndex(0)
+        self.email.clear()
+        self.celular.clear()
+        self.cep.clear()
+        self.logradouro.clear()
+        self.numero.clear()
+        self.complemento.clear()
+        self.bairro.clear()
+        self.cidade.clear()
+        self.estado.setCurrentIndex(0)
+
+    def CarregarJanela(self):
+        self.setGeometry(self.esquerda, self.topo, self.largura, self.altura)
+        self.setWindowTitle(self.titulo)
+        self.show()
+
+if __name__ == '__main__':
+    aplicacao = QApplication(sys.argv)
+    j = Janela_cadastro()
+    sys.exit(aplicacao.exec())
