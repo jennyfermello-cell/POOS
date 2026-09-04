@@ -71,7 +71,7 @@ class Janela_cadastro(QMainWindow):
         self.celular.resize(380, 35)
         self.celular.setPlaceholderText("Ex: 11912345678")
 
-        # 5. CEP + Botão ConsultarS
+        # 5. CEP + Botão Consultar
         label6 = QLabel(self)
         label6.setText("CEP:")
         label6.move(15, 290)
@@ -306,12 +306,12 @@ class Janela_cadastro(QMainWindow):
 
         if tipo_doc == "CPF":
             if not self.validar_cpf(cpf_cnpj_salvo):
-                QMessageBox.warning(self, "Erro de Validação", "O CPF não pode conter números ou caracteres especiais é inválido!")
+                QMessageBox.warning(self, "Erro de Validação", "O CPF não pode conter letras ou caracteres especiais!")
                 self.cpf_cnpj.setFocus()
                 return
         elif tipo_doc == "CNPJ":
             if not self.validar_cnpj(cpf_cnpj_salvo):
-                QMessageBox.warning(self, "Erro de Validação", "O CNPJ não pode conter números ou caracteres especiais informado é inválido!")
+                QMessageBox.warning(self, "Erro de Validação", "O CNPJ não pode conter letras ou caracteres especiais!")
                 self.cpf_cnpj.setFocus()
                 return
 
